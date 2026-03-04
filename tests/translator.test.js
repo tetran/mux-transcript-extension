@@ -94,6 +94,16 @@ describe('translateTexts', () => {
     expect(result).toEqual(['Hello', 'World']);
   });
 
+  test('DeepL レスポンスの translations が不正な場合 → 原文にフォールバック', async () => {
+    const { translateTexts } = loadTranslator();
+    mockGet.mockImplementation((keys, cb) => cb({ deeplApiKey: 'my-api-key' }));
+    mockSendMessage.mockImplementation((msg, cb) =>
+      cb({ ok: true, translations: [] })
+    );
+    const result = await translateTexts(['Hello', 'World']);
+    expect(result).toEqual(['Hello', 'World']);
+  });
+
   test('sendMessage が応答なし（lastError）→ 原文にフォールバック', async () => {
     const { translateTexts } = loadTranslator();
     mockGet.mockImplementation((keys, cb) => cb({ deeplApiKey: 'my-api-key' }));
@@ -132,6 +142,92 @@ describe('translateTexts', () => {
     expect(result).toEqual(['こんにちは', '世界']);
     expect(mockSendMessage).toHaveBeenCalledTimes(1);
     expect(mockSendMessage.mock.calls[0][0].texts).toEqual(['World']);
+  });
+});
+
+describe('getTranslationOptions', () => {
+  test('storage に値がなければデフォルト値を返す', async () => {
+    const { getTranslationOptions } = loadTranslator();
+    mockGet.mockImplementation((keys, cb) => cb({}));
+    const options = await getTranslationOptions();
+    expect(options.formality).toBe('default');
+    expect(options.customInstructions).toBe('');
+  });
+
+  test('storage の値を返す', async () => {
+    const { getTranslationOptions } = loadTranslator();
+    mockGet.mockImplementation((keys, cb) =>
+      cb({ deeplFormality: 'prefer_more', deeplCustomInstructions: '簡潔に翻訳して' })
+    );
+    const options = await getTranslationOptions();
+    expect(options.formality).toBe('prefer_more');
+    expect(options.customInstructions).toBe('簡潔に翻訳して');
+  });
+});
+
+describe('translateTexts with formality/customInstructions', () => {
+  function mockStorageWith({ apiKey = 'my-api-key', formality = 'default', customInstructions = '' } = {}) {
+    mockGet.mockImplementation((keys, cb) => {
+      if (Array.isArray(keys)) {
+        cb({ deeplApiKey: apiKey });
+      } else {
+        cb({ deeplFormality: formality, deeplCustomInstructions: customInstructions });
+      }
+    });
+  }
+
+  test('formality が TRANSLATE メッセージに含まれる', async () => {
+    const { translateTexts } = loadTranslator();
+    mockStorageWith({ formality: 'prefer_more' });
+    mockSendMessage.mockImplementation((msg, cb) =>
+      cb({ ok: true, translations: [{ text: 'こんにちは' }] })
+    );
+    await translateTexts(['Hello']);
+    const msg = mockSendMessage.mock.calls[0][0];
+    expect(msg.formality).toBe('prefer_more');
+  });
+
+  test('customInstructions が非空のとき TRANSLATE メッセージに含まれる', async () => {
+    const { translateTexts } = loadTranslator();
+    mockStorageWith({ customInstructions: '丁寧語で翻訳して' });
+    mockSendMessage.mockImplementation((msg, cb) =>
+      cb({ ok: true, translations: [{ text: 'こんにちは' }] })
+    );
+    await translateTexts(['Hello']);
+    const msg = mockSendMessage.mock.calls[0][0];
+    expect(msg.customInstructions).toBe('丁寧語で翻訳して');
+  });
+
+  test('customInstructions が空のとき TRANSLATE メッセージに含まれない', async () => {
+    const { translateTexts } = loadTranslator();
+    mockStorageWith({ customInstructions: '' });
+    mockSendMessage.mockImplementation((msg, cb) =>
+      cb({ ok: true, translations: [{ text: 'こんにちは' }] })
+    );
+    await translateTexts(['Hello']);
+    const msg = mockSendMessage.mock.calls[0][0];
+    expect(msg.customInstructions).toBeUndefined();
+  });
+
+  test('formality が変わるとキャッシュミスが起きる', async () => {
+    const { translateTexts } = loadTranslator();
+
+    // 1回目: formality='default'
+    mockStorageWith({ formality: 'default' });
+    mockSendMessage.mockImplementationOnce((msg, cb) =>
+      cb({ ok: true, translations: [{ text: 'こんにちは' }] })
+    );
+    await translateTexts(['Hello']);
+    expect(mockSendMessage).toHaveBeenCalledTimes(1);
+
+    // 2回目: formality='prefer_more' → キャッシュミス
+    mockSendMessage.mockClear();
+    mockStorageWith({ formality: 'prefer_more' });
+    mockSendMessage.mockImplementationOnce((msg, cb) =>
+      cb({ ok: true, translations: [{ text: 'こんにちは' }] })
+    );
+    await translateTexts(['Hello']);
+    expect(mockSendMessage).toHaveBeenCalledTimes(1);
   });
 });
 

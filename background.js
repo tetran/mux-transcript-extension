@@ -4,7 +4,13 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type !== 'TRANSLATE') return false;
 
-  const { apiKey, texts } = message;
+  const { apiKey, texts, customInstructions = '' } = message;
+  const VALID_FORMALITY = ['default', 'more', 'less', 'prefer_more', 'prefer_less'];
+  const formality = VALID_FORMALITY.includes(message.formality) ? message.formality : 'default';
+  const sanitizedInstructions = String(customInstructions).trim().slice(0, 300);
+
+  const body = { text: texts, target_lang: 'JA', formality };
+  if (sanitizedInstructions) body.custom_instructions = [sanitizedInstructions];
 
   fetch('https://api-free.deepl.com/v2/translate', {
     method: 'POST',
@@ -12,7 +18,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       Authorization: `DeepL-Auth-Key ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ text: texts, target_lang: 'JA' }),
+    body: JSON.stringify(body),
   })
     .then((res) => {
       if (!res.ok) {

@@ -19,13 +19,27 @@
       margin-bottom: 6px;
       font-weight: bold;
     }
-    input[type="password"] {
+    input[type="password"],
+    select,
+    textarea {
       width: 100%;
       padding: 8px;
       font-size: 1rem;
       box-sizing: border-box;
       border: 1px solid #ccc;
       border-radius: 4px;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    .field {
+      margin-bottom: 16px;
+    }
+    .char-count {
+      margin-top: 4px;
+      font-size: 0.8rem;
+      color: #6b7280;
     }
     button {
       margin-top: 12px;
@@ -50,8 +64,24 @@
 </head>
 <body>
   <h1>DeepL 翻訳設定</h1>
-  <label for="apiKey">DeepL Free API キー</label>
-  <input type="password" id="apiKey" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx" />
+  <div class="field">
+    <label for="apiKey">DeepL Free API キー</label>
+    <input type="password" id="apiKey" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx" />
+  </div>
+  <div class="field">
+    <label for="formality">ていねいさ</label>
+    <select id="formality">
+      <option value="prefer_more">ていねい</option>
+      <option value="default">ふつう</option>
+      <option value="prefer_less">カジュアル</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="customInstructions">話し方（任意）</label>
+    <textarea id="customInstructions" maxlength="300"
+      placeholder="例: できるだけ簡潔に翻訳してください"></textarea>
+    <p id="charCount" class="char-count">0 / 300</p>
+  </div>
   <button id="save">保存</button>
   <p id="status"></p>
   <script src="src/options.js"></script>
