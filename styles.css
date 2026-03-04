@@ -1,0 +1,27 @@
+#mux-subtitle-container {
+  position: absolute;
+  bottom: 48px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  pointer-events: none;
+  z-index: 9999;
+  padding: 0 8%;
+}
+
+#mux-subtitle-text {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.75);
+  color: #ffffff;
+  font-size: 1rem;
+  line-height: 1.4;
+  padding: 4px 12px;
+  border-radius: 4px;
+  max-width: 100%;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+#mux-subtitle-text:empty {
+  display: none;
+}

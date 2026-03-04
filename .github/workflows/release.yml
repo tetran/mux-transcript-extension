@@ -1,0 +1,36 @@
+name: Create Release ZIP
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create ZIP
+        run: |
+          zip -r mux-transcript-extension.zip . \
+            --exclude "*/.git/*" \
+            --exclude "*/node_modules/*" \
+            --exclude "*/tests/*" \
+            --exclude "*/codex-review/*" \
+            --exclude "*/.github/*"
+
+      - name: Delete existing latest release
+        run: gh release delete latest --yes --cleanup-tag || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest
+          body: mainブランチの最新ビルド
+          files: mux-transcript-extension.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
