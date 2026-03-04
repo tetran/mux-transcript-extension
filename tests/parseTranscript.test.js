@@ -101,4 +101,20 @@ describe('parseTranscript', () => {
     expect(entries).toHaveLength(1);
     expect(entries[0]).toEqual({ startSec: 10.5, text: 'Decimal seconds' });
   });
+
+  test('data-mux-original 属性があれば textContent より優先して使う', () => {
+    const container = document.createElement('div');
+    const row = document.createElement('div');
+    row.setAttribute('wire:click', `$dispatch('seek-video', { time: '00:05' })`);
+    const textDiv = document.createElement('div');
+    textDiv.className = 'font-sans';
+    textDiv.dataset.muxOriginal = 'Original English text';
+    textDiv.textContent = '翻訳済み日本語テキスト';
+    row.appendChild(textDiv);
+    container.appendChild(row);
+
+    const entries = parseTranscript(container);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toEqual({ startSec: 5, text: 'Original English text' });
+  });
 });

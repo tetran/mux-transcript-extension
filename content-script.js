@@ -57,14 +57,44 @@ function onBridgeMessage(event) {
 }
 
 // ──────────────────────────────────────────
+// Transcript タブの DOM を翻訳済みテキストで書き換える
+// Observer を一時切断して無限ループを防ぐ
+// ──────────────────────────────────────────
+function updateTranscriptDOM(containerEl, translatedEntries) {
+  if (!containerEl || !translatedEntries.length) return;
+  if (transcriptObserver) transcriptObserver.disconnect();
+
+  const rows = containerEl.querySelectorAll(TRANSCRIPT_ROW_SELECTOR);
+  let entryIndex = 0;
+  rows.forEach((row) => {
+    if (entryIndex >= translatedEntries.length) return;
+    const wireClick = row.getAttribute('wire:click') || '';
+    if (!wireClick.match(/time:\s*['"]([0-9:.]+)['"]/)) return;
+    const textEl = row.querySelector(TRANSCRIPT_TEXT_SELECTOR);
+    if (!textEl) return;
+    const originalText = (textEl.dataset.muxOriginal || textEl.innerText || textEl.textContent || '').trim();
+    if (!originalText) return;
+    textEl.dataset.muxOriginal = textEl.dataset.muxOriginal || originalText;
+    textEl.textContent = translatedEntries[entryIndex].text;
+    entryIndex++;
+  });
+
+  if (transcriptObserver) {
+    transcriptObserver.observe(containerEl, { childList: true, subtree: true, characterData: true });
+  }
+}
+
+// ──────────────────────────────────────────
 // MutationObserver で字幕行の変化を検知して再パース
 // ──────────────────────────────────────────
 function attachMutationObserver(containerEl) {
   if (transcriptObserver) transcriptObserver.disconnect();
   transcriptObserver = new MutationObserver(() => {
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      entries = parseTranscript(containerEl);
+    debounceTimer = setTimeout(async () => {
+      const rawEntries = parseTranscript(containerEl);
+      entries = await translateEntries(rawEntries);
+      updateTranscriptDOM(containerEl, entries);
       lastIndex = -2;
     }, 100);
   });
@@ -113,8 +143,10 @@ function openTranscriptTab() {
 // Transcript のセットアップ
 // ──────────────────────────────────────────
 async function setupTranscript(containerEl) {
-  entries = parseTranscript(containerEl);
+  const rawEntries = parseTranscript(containerEl);
+  entries = await translateEntries(rawEntries);
   attachMutationObserver(containerEl);
+  updateTranscriptDOM(containerEl, entries);
 }
 
 // ──────────────────────────────────────────

@@ -56,7 +56,9 @@ function parseTranscript(containerEl) {
     if (!match) return;
     const startSec = parseTimecode(match[1]);
     const textEl = row.querySelector(TRANSCRIPT_TEXT_SELECTOR);
-    const text = textEl ? (textEl.innerText || textEl.textContent || '').trim() : '';
+    const text = textEl
+      ? (textEl.dataset?.muxOriginal || textEl.innerText || textEl.textContent || '').trim()
+      : '';
     if (!text) return;
     entries.push({ startSec, text });
   });

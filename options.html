@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laravel Learn Mux Subtitle - オプション</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 24px;
+      max-width: 480px;
+    }
+    h1 {
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+    input[type="password"] {
+      width: 100%;
+      padding: 8px;
+      font-size: 1rem;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      margin-top: 12px;
+      padding: 8px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    #status {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #16a34a;
+      min-height: 1.2em;
+    }
+  </style>
+</head>
+<body>
+  <h1>DeepL 翻訳設定</h1>
+  <label for="apiKey">DeepL Free API キー</label>
+  <input type="password" id="apiKey" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx" />
+  <button id="save">保存</button>
+  <p id="status"></p>
+  <script src="src/options.js"></script>
+</body>
+</html>

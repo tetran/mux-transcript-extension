@@ -1,9 +1,17 @@
 {
   "manifest_version": 3,
   "name": "Laravel Learn Mux Subtitle",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Mux Player の再生時間に同期して Transcript の字幕を表示する",
-  "host_permissions": ["https://laravel.com/learn/*"],
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://laravel.com/learn/*",
+    "https://api-free.deepl.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "options.html",
   "content_scripts": [
     {
       "matches": ["https://laravel.com/learn/*"],
@@ -13,7 +21,7 @@
     },
     {
       "matches": ["https://laravel.com/learn/*"],
-      "js": ["src/utils.js", "content-script.js"],
+      "js": ["src/utils.js", "src/translator.js", "content-script.js"],
       "css": ["styles.css"],
       "run_at": "document_idle"
     }
