@@ -8,7 +8,7 @@
     ['timeupdate', 'seeked', 'loadedmetadata'].forEach((type) => {
       player.addEventListener(type, (e) => {
         window.postMessage(
-          { __muxSubtitle: true, token: TOKEN, currentTime: e.target.currentTime },
+          { __muxSubtitle: true, token: TOKEN, currentTime: e.target.currentTime, eventType: type },
           '*'
         );
       });

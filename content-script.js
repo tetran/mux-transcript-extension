@@ -11,6 +11,8 @@ let lastIndex = -2; // -2 = 未初期化
 let debounceTimer = null;
 let transcriptObserver = null;
 let originalMuxPlayerPosition = null;
+let currentMinMs = 0;
+let minDisplayController = createMinDisplayController(currentMinMs, updateSubtitleDOM);
 
 // ──────────────────────────────────────────
 // 字幕 DOM の挿入
@@ -53,7 +55,8 @@ function onBridgeMessage(event) {
   if (!expectedToken || event.data.token !== expectedToken) return;
   if (!Number.isFinite(event.data.currentTime)) return;
   const index = findCurrentIndex(entries, event.data.currentTime);
-  updateSubtitleDOM(index);
+  const bypass = event.data.eventType !== 'timeupdate';
+  minDisplayController.update(index, bypass);
 }
 
 // ──────────────────────────────────────────
@@ -96,6 +99,8 @@ function attachMutationObserver(containerEl) {
       entries = await translateEntries(rawEntries);
       updateTranscriptDOM(containerEl, entries);
       lastIndex = -2;
+      minDisplayController.dispose();
+      minDisplayController = createMinDisplayController(currentMinMs, updateSubtitleDOM);
     }, 100);
   });
   transcriptObserver.observe(containerEl, { childList: true, subtree: true, characterData: true });
@@ -204,6 +209,7 @@ function cleanup() {
     transcriptObserver = null;
   }
   window.removeEventListener('message', onBridgeMessage);
+  minDisplayController.dispose();
   if (originalMuxPlayerPosition !== null) {
     const muxPlayer = document.querySelector(MUX_PLAYER_SELECTOR);
     if (muxPlayer) muxPlayer.style.position = originalMuxPlayerPosition;
@@ -216,6 +222,19 @@ window.addEventListener('beforeunload', cleanup);
 // エントリーポイント
 // ──────────────────────────────────────────
 async function init() {
+  chrome.storage.sync.get({ subtitleMinDisplaySeconds: 2 }, (result) => {
+    currentMinMs = result.subtitleMinDisplaySeconds * 1000;
+    minDisplayController = createMinDisplayController(currentMinMs, updateSubtitleDOM);
+  });
+
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.subtitleMinDisplaySeconds) {
+      currentMinMs = changes.subtitleMinDisplaySeconds.newValue * 1000;
+      minDisplayController.dispose();
+      minDisplayController = createMinDisplayController(currentMinMs, updateSubtitleDOM);
+    }
+  });
+
   try {
     const muxPlayer = await waitForMuxPlayer();
     await onMuxPlayerReady(muxPlayer);

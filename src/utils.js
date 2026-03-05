@@ -65,6 +65,59 @@ function parseTranscript(containerEl) {
   return entries;
 }
 
+/**
+ * 字幕の最小表示時間を管理するコントローラーを生成する。
+ * @param {number} minMs 最小表示時間（ミリ秒）
+ * @param {(index: number) => void} onUpdate 字幕を更新するコールバック
+ */
+function createMinDisplayController(minMs, onUpdate) {
+  let lastShownAt = -Infinity;
+  let lastShownIndex = undefined;
+  let pendingIndex = undefined;
+  let timer = null;
+
+  return {
+    update(index, bypass = false) {
+      // 表示済みの同一 index かつ pending timer もなければスキップ
+      if (index === lastShownIndex && timer === null && !bypass) return;
+      // pending timer と同一 index で bypass でもなければスキップ
+      if (index === pendingIndex && timer !== null && !bypass) return;
+
+      clearTimeout(timer);
+      timer = null;
+      pendingIndex = undefined;
+
+      if (bypass || minMs <= 0) {
+        lastShownAt = Date.now();
+        lastShownIndex = index;
+        onUpdate(index);
+        return;
+      }
+      const elapsed = Date.now() - lastShownAt;
+      const remaining = minMs - elapsed;
+      if (remaining <= 0) {
+        lastShownAt = Date.now();
+        lastShownIndex = index;
+        onUpdate(index);
+      } else {
+        pendingIndex = index;
+        timer = setTimeout(() => {
+          timer = null;
+          pendingIndex = undefined;
+          lastShownAt = Date.now();
+          lastShownIndex = index;
+          onUpdate(index);
+        }, remaining);
+      }
+    },
+    dispose() {
+      clearTimeout(timer);
+      timer = null;
+      pendingIndex = undefined;
+    },
+  };
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { parseTimecode, findCurrentIndex, parseTranscript };
+  module.exports = { parseTimecode, findCurrentIndex, parseTranscript, createMinDisplayController };
 }

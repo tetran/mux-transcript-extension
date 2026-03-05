@@ -20,6 +20,7 @@
       font-weight: bold;
     }
     input[type="password"],
+    input[type="range"],
     select,
     textarea {
       width: 100%;
@@ -75,6 +76,13 @@
       <option value="default">ふつう</option>
       <option value="prefer_less">カジュアル</option>
     </select>
+  </div>
+  <div class="field">
+    <label for="minDisplaySeconds">字幕の最小表示時間</label>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <input type="range" id="minDisplaySeconds" min="0" max="5" step="0.5" style="flex:1" />
+      <span id="minDisplayValue">2.0 秒</span>
+    </div>
   </div>
   <div class="field">
     <label for="customInstructions">話し方（任意）</label>

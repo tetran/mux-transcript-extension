@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Laravel Learn Mux Subtitle",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Mux Player の再生時間に同期して Transcript の字幕を表示する",
   "permissions": ["storage"],
   "host_permissions": [
