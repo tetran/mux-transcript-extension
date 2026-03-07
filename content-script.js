@@ -159,6 +159,8 @@ async function setupTranscript(containerEl) {
 // ──────────────────────────────────────────
 async function onMuxPlayerReady(muxPlayer) {
   insertSubtitleContainer(muxPlayer);
+  const textEl = document.getElementById('mux-subtitle-text');
+  if (textEl) textEl.textContent = 'Transcript を読み込み中…';
   openTranscriptTab();
 
   try {

@@ -4,14 +4,14 @@
 
 Laravel Learn の特定レッスンページ（例：`https://laravel.com/learn/getting-started-with-laravel/what-are-we-building`）上の **Mux Player (`<mux-player>`)** の再生時間に同期して、ページ内の **Transcript タブ**に掲載されているテキスト（※ブラウザ翻訳後の表示テキストを想定）を **動画の直下**に字幕として表示する Chrome Extension を作成する。
 
-本拡張は **翻訳機能を内包しない**。ユーザーが Chrome の「このページを翻訳」等の機能でページを日本語化した状態を前提に、拡張は **Transcript の“表示文字列”** を拾って字幕表示する。
+本拡張は **オプションで DeepL Free API を用いた自動翻訳機能を持つ**。APIキー未設定の場合は、ユーザーが Chrome の「このページを翻訳」等の機能でページを日本語化した状態を前提に、拡張は **Transcript の”表示文字列”** を拾って字幕表示する。
 
 ---
 
 ## 2. 目的 / ゴール
 
 - `<mux-player>` の `currentTime` に合わせて、対応する Transcript 行（時刻→テキスト）を字幕表示する
-- 字幕は **動画の直下**に表示する（オーバーレイではなくページ要素として差し込む）
+- 字幕は **`<mux-player>` 内部にオーバーレイ**として表示する（`position: absolute; bottom: 48px`）
 - Transcript 側のタイムコード（`mm:ss` または `hh:mm:ss`）をパースして同期する
 - ブラウザ翻訳を前提に、字幕表示に使う文字列は **翻訳済みの表示テキスト**を優先して取得する
 
@@ -19,7 +19,7 @@ Laravel Learn の特定レッスンページ（例：`https://laravel.com/learn/
 
 ## 3. 非ゴール（やらないこと）
 
-- 拡張機能内での自動翻訳（API連携、ローカル翻訳モデル、辞書機能）
+- ローカル翻訳モデル・辞書機能による自動翻訳
 - 動画プレイヤー内部（Shadow DOM）に直接字幕を描画すること
 - 字幕ファイル（VTT/SRT）としてのダウンロード/エクスポート
 - 複数言語切替 UI（ブラウザ翻訳に依存）
@@ -49,7 +49,7 @@ Laravel Learn の特定レッスンページ（例：`https://laravel.com/learn/
 ## 6. 機能要件
 
 ### 6.1 字幕表示 UI
-- `<mux-player>` の直下（または最も近い適切な親コンテナ直下）に字幕コンテナを挿入する
+- `<mux-player>` 内部に `position: absolute; bottom: 48px` のオーバーレイとして字幕コンテナを挿入する
 - 表示内容：
   - 現在行の字幕（必須）
   - （任意）次行/前行のプレビュー、時刻表示
@@ -115,11 +115,9 @@ Laravel Learn の特定レッスンページ（例：`https://laravel.com/learn/
   - `idx < 0` の場合は字幕非表示 or 最初行表示
 
 ### 8.3 DOM 挿入位置
-- 基本：`document.querySelector('mux-player')` を起点に
-  - `muxPlayer.parentElement` 近辺に字幕コンテナを挿入
-- ページがスクロールでミニプレイヤー化（`position: fixed`）する場合、字幕の追従要件を決める：
-  - MVP：通常表示位置（本文側）に固定（ミニプレイヤー時は字幕が見えない可能性）
-  - 将来：ミニプレイヤーにも追従して字幕も移動
+- `muxPlayer.appendChild(container)` で `<mux-player>` 内部に字幕コンテナを挿入する
+- `mux-player` の `position` が `static` の場合は `relative` に変更して `position: absolute` の子要素が正しく配置されるようにする
+- ミニプレイヤー化（スクロール固定）時は字幕も追従する（オーバーレイのため）
 
 ---
 
@@ -132,23 +130,31 @@ Laravel Learn の特定レッスンページ（例：`https://laravel.com/learn/
 
 ---
 
-## 10. 設定（将来拡張）
+## 10. 設定画面
 
-MVPでは設定画面なし。将来以下を追加可能：
+拡張機能の設定ページ（`options.html`）で以下を設定可能：
 
+- **DeepL API キー**：Free API キーを入力して自動翻訳を有効化
+- **翻訳のていねいさ**：ていねい / ふつう / カジュアル の3択
+- **話し方**（任意・自由入力）：好みの話し方を自由に記述（例: コメディアンぽく、法廷の雰囲気で、など）。最大300文字
+- **字幕最小表示時間**：字幕が短時間で切り替わりすぎないよう最低表示秒数を設定（デフォルト 2秒）
+
+将来追加可能：
 - 字幕表示 ON/OFF
 - フォントサイズ、背景透過、表示行数（1行/2行）
 - Transcript 自動展開のON/OFF
-- ミニプレイヤー追従のON/OFF
 
 ---
 
 ## 11. セキュリティ / 権限
 
 ### 11.1 Manifest V3 権限
-- `host_permissions`: `https://laravel.com/learn/*`
-- `permissions`: 可能な限り最小（基本は不要）
-- 外部通信なし（翻訳APIなどを使わない）
+- `host_permissions`:
+  - `https://laravel.com/learn/*`（コンテンツスクリプト対象）
+  - `https://api-free.deepl.com/*`（DeepL Free API 通信用）
+- `permissions`:
+  - `storage`（APIキー・設定値の保存用）
+- 外部通信：DeepL Free API への翻訳リクエストのみ（APIキー設定時）
 
 ---
 
