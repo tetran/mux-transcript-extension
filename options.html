@@ -22,7 +22,8 @@
     input[type="password"],
     input[type="range"],
     select,
-    textarea {
+    textarea,
+    #apiKey {
       width: 100%;
       padding: 8px;
       font-size: 1rem;
@@ -55,11 +56,34 @@
     button:hover {
       background: #2563eb;
     }
+    .button-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .reset-btn {
+      background: #6b7280;
+    }
+    .reset-btn:hover {
+      background: #4b5563;
+    }
     #status {
       margin-top: 10px;
       font-size: 0.9rem;
       color: #16a34a;
       min-height: 1.2em;
+    }
+    .toggle-btn {
+      margin-top: 0;
+      padding: 6px 10px;
+      font-size: 0.85rem;
+      background: transparent;
+      color: #374151;
+      border: 1px solid #ccc;
+      white-space: nowrap;
+    }
+    .toggle-btn:hover {
+      background: #f3f4f6;
     }
   </style>
 </head>
@@ -67,7 +91,10 @@
   <h1>DeepL 翻訳設定</h1>
   <div class="field">
     <label for="apiKey">DeepL Free API キー</label>
-    <input type="password" id="apiKey" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx" />
+    <div style="display:flex; align-items:center; gap:8px;">
+      <input type="password" id="apiKey" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx" style="flex:1" />
+      <button type="button" id="toggleApiKey" class="toggle-btn">表示</button>
+    </div>
   </div>
   <div class="field">
     <label for="formality">ていねいさ</label>
@@ -85,12 +112,22 @@
     </div>
   </div>
   <div class="field">
+    <label for="subtitleFontSize">字幕の文字サイズ</label>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <input type="range" id="subtitleFontSize" min="10" max="32" step="2" style="flex:1" />
+      <span id="fontSizeValue">16px</span>
+    </div>
+  </div>
+  <div class="field">
     <label for="customInstructions">話し方（任意）</label>
     <textarea id="customInstructions" maxlength="300"
       placeholder="例: できるだけ簡潔に翻訳してください"></textarea>
     <p id="charCount" class="char-count">0 / 300</p>
   </div>
-  <button id="save">保存</button>
+  <div class="button-row">
+    <button id="save">保存</button>
+    <button id="reset" class="reset-btn">設定をリセット</button>
+  </div>
   <p id="status"></p>
   <script src="src/options.js"></script>
 </body>

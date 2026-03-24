@@ -11,6 +11,7 @@ let debounceTimer = null;
 let transcriptObserver = null;
 let originalMuxPlayerPosition = null;
 let currentMinMs = 0;
+let currentFontSizePx = 16;
 let minDisplayController = createMinDisplayController(currentMinMs, updateSubtitleDOM);
 
 // ──────────────────────────────────────────
@@ -159,7 +160,10 @@ async function setupTranscript(containerEl) {
 async function onMuxPlayerReady(muxPlayer) {
   insertSubtitleContainer(muxPlayer);
   const textEl = document.getElementById('mux-subtitle-text');
-  if (textEl) textEl.textContent = 'Transcript を読み込み中…';
+  if (textEl) {
+    textEl.textContent = 'Transcript を読み込み中…';
+    textEl.style.fontSize = `${currentFontSizePx}px`;
+  }
   openTranscriptTab();
 
   try {
@@ -222,10 +226,17 @@ window.addEventListener('beforeunload', cleanup);
 // ──────────────────────────────────────────
 // エントリーポイント
 // ──────────────────────────────────────────
+function applySubtitleFontSize(px) {
+  const el = document.getElementById('mux-subtitle-text');
+  if (el) el.style.fontSize = `${px}px`;
+}
+
 async function init() {
-  chrome.storage.sync.get({ subtitleMinDisplaySeconds: 2 }, (result) => {
+  chrome.storage.sync.get({ subtitleMinDisplaySeconds: 2, subtitleFontSize: 16 }, (result) => {
     currentMinMs = result.subtitleMinDisplaySeconds * 1000;
+    currentFontSizePx = result.subtitleFontSize;
     minDisplayController = createMinDisplayController(currentMinMs, updateSubtitleDOM);
+    applySubtitleFontSize(result.subtitleFontSize);
   });
 
   chrome.storage.onChanged.addListener((changes) => {
@@ -233,6 +244,9 @@ async function init() {
       currentMinMs = changes.subtitleMinDisplaySeconds.newValue * 1000;
       minDisplayController.dispose();
       minDisplayController = createMinDisplayController(currentMinMs, updateSubtitleDOM);
+    }
+    if (changes.subtitleFontSize) {
+      applySubtitleFontSize(changes.subtitleFontSize.newValue);
     }
   });
 
