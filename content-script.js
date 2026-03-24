@@ -2,7 +2,6 @@
 // src/utils.js のグローバル関数（parseTimecode, findCurrentIndex, parseTranscript）を使用
 // 時刻は bridge.js (MAIN world) から postMessage で受け取る
 
-const TRANSCRIPT_TAB_SELECTOR = '[\\@click*="transcript"]';
 const MUX_PLAYER_SELECTOR = 'mux-player';
 const SUBTITLE_CONTAINER_ID = 'mux-subtitle-container';
 
@@ -71,8 +70,8 @@ function updateTranscriptDOM(containerEl, translatedEntries) {
   let entryIndex = 0;
   rows.forEach((row) => {
     if (entryIndex >= translatedEntries.length) return;
-    const wireClick = row.getAttribute('wire:click') || '';
-    if (!wireClick.match(/time:\s*['"]([0-9:.]+)['"]/)) return;
+    const timestampEl = row.querySelector(TRANSCRIPT_TIMESTAMP_SELECTOR);
+    if (!timestampEl) return;
     const textEl = row.querySelector(TRANSCRIPT_TEXT_SELECTOR);
     if (!textEl) return;
     const originalText = (textEl.dataset.muxOriginal || textEl.innerText || textEl.textContent || '').trim();
@@ -136,7 +135,7 @@ function waitForTranscriptDOM(timeoutMs = 10000) {
 // Transcript タブを開く
 // ──────────────────────────────────────────
 function openTranscriptTab() {
-  const tab = document.querySelector(TRANSCRIPT_TAB_SELECTOR);
+  const tab = findTranscriptTab(document);
   if (!tab) {
     console.warn('[mux-subtitle] Transcript タブが見つからんかった');
     return;

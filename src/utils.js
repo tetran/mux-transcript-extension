@@ -38,8 +38,20 @@ function findCurrentIndex(entries, currentTime) {
   return index < 0 ? -1 : index;
 }
 
-const TRANSCRIPT_ROW_SELECTOR = '[wire\\:click*="seek-video"]';
+const TRANSCRIPT_ROW_SELECTOR = 'div:has(> span.font-commit-mono)';
+const TRANSCRIPT_TIMESTAMP_SELECTOR = 'span.font-commit-mono';
 const TRANSCRIPT_TEXT_SELECTOR = 'div.font-sans, div[class*="font-sans"]';
+
+/**
+ * テキストが "Transcript" の button 要素を返す
+ * @param {Document} doc
+ * @returns {Element|null}
+ */
+function findTranscriptTab(doc) {
+  return Array.from(doc.querySelectorAll('button')).find(
+    btn => btn.textContent.trim() === 'Transcript'
+  ) ?? null;
+}
 
 /**
  * Transcript コンテナから字幕エントリの配列を生成する
@@ -51,10 +63,9 @@ function parseTranscript(containerEl) {
   const rows = containerEl.querySelectorAll(TRANSCRIPT_ROW_SELECTOR);
   const entries = [];
   rows.forEach((row) => {
-    const wireClick = row.getAttribute('wire:click') || '';
-    const match = wireClick.match(/time:\s*['"]([0-9:.]+)['"]/);
-    if (!match) return;
-    const startSec = parseTimecode(match[1]);
+    const timestampEl = row.querySelector(TRANSCRIPT_TIMESTAMP_SELECTOR);
+    if (!timestampEl) return;
+    const startSec = parseTimecode(timestampEl.textContent.trim());
     const textEl = row.querySelector(TRANSCRIPT_TEXT_SELECTOR);
     const text = textEl
       ? (textEl.dataset?.muxOriginal || textEl.innerText || textEl.textContent || '').trim()
@@ -119,5 +130,5 @@ function createMinDisplayController(minMs, onUpdate) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { parseTimecode, findCurrentIndex, parseTranscript, createMinDisplayController };
+  module.exports = { parseTimecode, findCurrentIndex, parseTranscript, createMinDisplayController, findTranscriptTab };
 }

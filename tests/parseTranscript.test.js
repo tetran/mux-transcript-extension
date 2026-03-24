@@ -2,15 +2,16 @@ const { parseTranscript } = require('../src/utils');
 
 /**
  * 実際の laravel.com/learn の Transcript DOM 構造に合わせたフィクスチャ
- * 字幕行: wire:click="$dispatch('seek-video', { time: 'mm:ss' })"
+ * 字幕行: div:has(> span.font-commit-mono)
+ * タイムスタンプ: span.font-commit-mono のテキスト
  * テキスト: div.font-sans
  */
 function buildContainer(rows) {
   const container = document.createElement('div');
   rows.forEach(({ time, text }) => {
     const row = document.createElement('div');
-    row.setAttribute('wire:click', `$dispatch('seek-video', { time: '${time}' })`);
     const span = document.createElement('span');
+    span.className = 'font-commit-mono';
     span.textContent = time;
     const textDiv = document.createElement('div');
     textDiv.className = 'font-sans';
@@ -48,13 +49,12 @@ describe('parseTranscript', () => {
     expect(entries[1].startSec).toBe(20);
   });
 
-  test('wire:click に時刻がない行はスキップする', () => {
+  test('タイムスタンプ span がない行はスキップする', () => {
     const container = document.createElement('div');
     const row = document.createElement('div');
-    row.setAttribute('wire:click', "someOtherAction()");
     const textDiv = document.createElement('div');
     textDiv.className = 'font-sans';
-    textDiv.textContent = 'No timecode';
+    textDiv.textContent = 'No timestamp span';
     row.appendChild(textDiv);
     container.appendChild(row);
 
@@ -72,31 +72,19 @@ describe('parseTranscript', () => {
     expect(parseTranscript(undefined)).toEqual([]);
   });
 
-  test('ダブルクォート形式の時刻をパースする', () => {
-    const container = document.createElement('div');
-    const row = document.createElement('div');
-    row.setAttribute('wire:click', `$dispatch('seek-video', { time: "01:30" })`);
-    const textDiv = document.createElement('div');
-    textDiv.className = 'font-sans';
-    textDiv.textContent = 'Double quote time';
-    row.appendChild(textDiv);
-    container.appendChild(row);
-
+  test('hh:mm:ss 形式の時刻をパースする', () => {
+    const container = buildContainer([
+      { time: '01:30:00', text: 'One hour thirty minutes' },
+    ]);
     const entries = parseTranscript(container);
     expect(entries).toHaveLength(1);
-    expect(entries[0]).toEqual({ startSec: 90, text: 'Double quote time' });
+    expect(entries[0]).toEqual({ startSec: 5400, text: 'One hour thirty minutes' });
   });
 
   test('小数秒を含む時刻をパースする', () => {
-    const container = document.createElement('div');
-    const row = document.createElement('div');
-    row.setAttribute('wire:click', `$dispatch('seek-video', { time: '00:10.5' })`);
-    const textDiv = document.createElement('div');
-    textDiv.className = 'font-sans';
-    textDiv.textContent = 'Decimal seconds';
-    row.appendChild(textDiv);
-    container.appendChild(row);
-
+    const container = buildContainer([
+      { time: '00:10.5', text: 'Decimal seconds' },
+    ]);
     const entries = parseTranscript(container);
     expect(entries).toHaveLength(1);
     expect(entries[0]).toEqual({ startSec: 10.5, text: 'Decimal seconds' });
@@ -105,11 +93,14 @@ describe('parseTranscript', () => {
   test('data-mux-original 属性があれば textContent より優先して使う', () => {
     const container = document.createElement('div');
     const row = document.createElement('div');
-    row.setAttribute('wire:click', `$dispatch('seek-video', { time: '00:05' })`);
+    const span = document.createElement('span');
+    span.className = 'font-commit-mono';
+    span.textContent = '00:05';
     const textDiv = document.createElement('div');
     textDiv.className = 'font-sans';
     textDiv.dataset.muxOriginal = 'Original English text';
     textDiv.textContent = '翻訳済み日本語テキスト';
+    row.appendChild(span);
     row.appendChild(textDiv);
     container.appendChild(row);
 
