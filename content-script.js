@@ -150,8 +150,50 @@ function openTranscriptTab() {
 async function setupTranscript(containerEl) {
   const rawEntries = parseTranscript(containerEl);
   entries = await translateEntries(rawEntries);
+  lastIndex = -2;
+  minDisplayController.dispose();
+  minDisplayController = createMinDisplayController(currentMinMs, updateSubtitleDOM);
   attachMutationObserver(containerEl);
   updateTranscriptDOM(containerEl, entries);
+}
+
+// ──────────────────────────────────────────
+// 手動リロードボタン
+// ──────────────────────────────────────────
+function insertReloadButton(muxPlayer) {
+  if (document.getElementById('mux-subtitle-reload')) return;
+  const btn = document.createElement('button');
+  btn.id = 'mux-subtitle-reload';
+  btn.type = 'button';
+  btn.textContent = '🔄';
+  btn.title = 'Transcript を再取得して字幕を更新';
+  btn.setAttribute('aria-label', 'Transcript を再取得して字幕を更新');
+  btn.addEventListener('click', onReloadClick);
+  muxPlayer.appendChild(btn);
+}
+
+async function onReloadClick() {
+  const btn = document.getElementById('mux-subtitle-reload');
+  const textEl = document.getElementById('mux-subtitle-text');
+  if (btn) btn.disabled = true;
+  if (textEl) textEl.textContent = 'Transcript を読み込み中…';
+  try {
+    const containerEl = await locateTranscriptContainer();
+    await setupTranscript(containerEl);
+  } catch (e) {
+    console.warn('[mux-subtitle]', e.message);
+    if (textEl) textEl.textContent = 'Transcript を表示してから 🔄 を押してください';
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// 既に表示中の Transcript があればそれを返し、なければタブを開いて DOM 出現を待つ
+async function locateTranscriptContainer() {
+  const existing = document.querySelector(TRANSCRIPT_ROW_SELECTOR);
+  if (existing && existing.parentElement) return existing.parentElement;
+  openTranscriptTab();
+  return waitForTranscriptDOM(5000);
 }
 
 // ──────────────────────────────────────────
@@ -159,6 +201,7 @@ async function setupTranscript(containerEl) {
 // ──────────────────────────────────────────
 async function onMuxPlayerReady(muxPlayer) {
   insertSubtitleContainer(muxPlayer);
+  insertReloadButton(muxPlayer);
   const textEl = document.getElementById('mux-subtitle-text');
   if (textEl) {
     textEl.textContent = 'Transcript を読み込み中…';
@@ -171,8 +214,7 @@ async function onMuxPlayerReady(muxPlayer) {
     await setupTranscript(containerEl);
   } catch (e) {
     console.warn('[mux-subtitle]', e.message);
-    const textEl = document.getElementById('mux-subtitle-text');
-    if (textEl) textEl.textContent = '[字幕を読み込めんかった]';
+    if (textEl) textEl.textContent = 'Transcript を表示してから 🔄 を押してください';
   }
 
   window.removeEventListener('message', onBridgeMessage);
